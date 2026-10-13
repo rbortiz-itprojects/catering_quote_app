@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custo &amp; Corte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#EDE7D8;
+    --paper-card:#F7F3E7;
+    --ink:#232920;
+    --ink-soft:#5B5A4C;
+    --accent:#B9812A;      /* mustard / spice */
+    --accent-dark:#8C6420;
+    --herb:#4C6B48;        /* olive-herb green */
+    --herb-dark:#374F34;
+    --brick:#A24A30;       /* warning / delete */
+    --line:#CFC6AC;
+    --line-soft:#DED6BE;
+    --white:#FFFDF7;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;}
+  #app{min-height:100vh;display:flex;}
+  ::selection{background:var(--accent);color:var(--white);}
+
+  /* ---------- layout ---------- */
+  .sidebar{
+    width:220px;flex-shrink:0;
+    background:var(--ink);color:var(--paper);
+    display:flex;flex-direction:column;
+    padding:28px 0 20px;
+  }
+  .brand{
+    font-family:'Fraunces',serif;font-weight:700;font-size:22px;
+    padding:0 22px 22px;border-bottom:1px solid rgba(255,255,255,0.12);
+    line-height:1.15;
+  }
+  .brand span{display:block;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-top:6px;}
+  .nav{margin-top:18px;display:flex;flex-direction:column;}
+  .nav-item{
+    font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.04em;
+    padding:13px 22px;cursor:pointer;color:rgba(247,243,231,0.65);
+    border-left:3px solid transparent;transition:all .15s ease;
+    display:flex;justify-content:space-between;
+  }
+  .nav-item:hover{color:var(--paper);background:rgba(255,255,255,0.04);}
+  .nav-item.active{color:var(--white);border-left-color:var(--accent);background:rgba(255,255,255,0.06);}
+  .nav-item .count{color:rgba(255,255,255,0.35);}
+  .nav-footer{margin-top:auto;padding:16px 22px 0;border-top:1px solid rgba(255,255,255,0.12);}
+  .nav-footer button{
+    width:100%;background:none;border:1px solid rgba(255,255,255,0.25);color:rgba(247,243,231,0.75);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px;border-radius:3px;cursor:pointer;margin-top:8px;
+    letter-spacing:.03em;
+  }
+  .nav-footer button:hover{border-color:var(--accent);color:var(--white);}
+
+  .main{flex:1;padding:36px 44px;max-width:1180px;}
+  h1.page-title{font-family:'Fraunces',serif;font-size:30px;font-weight:600;margin:0 0 4px;}
+  .page-sub{color:var(--ink-soft);font-size:14px;margin:0 0 26px;}
+
+  /* ---------- ledger table ---------- */
+  table.ledger{width:100%;border-collapse:collapse;background:var(--paper-card);border:1px solid var(--line);}
+  table.ledger thead th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-soft);padding:10px 14px;border-bottom:1px solid var(--line);background:#E8E1CD;
+  }
+  table.ledger tbody td{padding:9px 14px;border-bottom:1px solid var(--line-soft);font-size:14px;vertical-align:middle;}
+  table.ledger tbody tr:last-child td{border-bottom:none;}
+  table.ledger tbody tr:hover{background:#F1ECDD;}
+  table.ledger input, table.ledger select{
+    font-family:inherit;font-size:14px;border:1px solid transparent;background:transparent;
+    padding:4px 6px;border-radius:3px;width:100%;color:var(--ink);
+  }
+  table.ledger input:hover, table.ledger select:hover{border-color:var(--line);}
+  table.ledger input:focus, table.ledger select:focus{outline:none;border-color:var(--accent);background:var(--white);}
+  .num{font-family:'IBM Plex Mono',monospace;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  .icon-btn{
+    background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;
+    color:var(--ink-soft);padding:4px 8px;border-radius:3px;
+  }
+  .icon-btn:hover{background:rgba(162,74,48,0.1);color:var(--brick);}
+  .icon-btn.add{color:var(--herb-dark);}
+  .icon-btn.add:hover{background:rgba(76,107,72,0.12);}
+
+  .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.02em;
+    background:var(--herb);color:var(--white);border:none;padding:9px 16px;border-radius:4px;cursor:pointer;
+  }
+  .btn:hover{background:var(--herb-dark);}
+  .btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn.secondary:hover{border-color:var(--ink-soft);}
+  .btn.ghost{background:transparent;color:var(--accent-dark);border:1px dashed var(--accent);}
+  .btn.ghost:hover{background:rgba(185,129,42,0.08);}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;}
+  .search{
+    font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 12px;border:1px solid var(--line);
+    border-radius:4px;background:var(--white);width:240px;
+  }
+
+  /* ---------- dish cards ---------- */
+  .dish-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+  .dish-card{
+    background:var(--paper-card);border:1px solid var(--line);border-radius:6px;padding:16px 18px;cursor:pointer;
+    transition:border-color .15s, transform .1s;position:relative;
+  }
+  .dish-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .dish-card h3{font-family:'Fraunces',serif;font-size:17px;margin:0 0 10px;font-weight:600;line-height:1.25;}
+  .dish-card .meta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;}
+  .dish-card .meta b{color:var(--herb-dark);}
+  .dish-card .del{
+    position:absolute;top:10px;right:10px;background:none;border:none;color:var(--ink-soft);
+    font-size:13px;cursor:pointer;opacity:0;transition:opacity .15s;
+  }
+  .dish-card:hover .del{opacity:1;}
+  .dish-card .del:hover{color:var(--brick);}
+
+  .new-dish-card{
+    display:flex;align-items:center;justify-content:center;border:1px dashed var(--line);border-radius:6px;
+    min-height:88px;cursor:pointer;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:13px;
+  }
+  .new-dish-card:hover{border-color:var(--accent);color:var(--accent-dark);}
+
+  /* ---------- dish editor ---------- */
+  .editor-header{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+  .back{cursor:pointer;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .back:hover{color:var(--accent-dark);}
+  .dish-name-input{
+    font-family:'Fraunces',serif;font-size:26px;font-weight:600;border:none;background:transparent;
+    border-bottom:1px solid transparent;padding:2px 0;flex:1;color:var(--ink);
+  }
+  .dish-name-input:hover{border-bottom-color:var(--line);}
+  .dish-name-input:focus{outline:none;border-bottom-color:var(--accent);}
+
+  .editor-grid{display:grid;grid-template-columns:1fr 280px;gap:28px;align-items:start;}
+
+  .field-row{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);}
+  .field input{
+    font-family:'IBM Plex Mono',monospace;font-size:14px;border:1px solid var(--line);border-radius:4px;
+    padding:7px 10px;background:var(--white);width:130px;
+  }
+  .field input:focus{outline:none;border-color:var(--accent);}
+
+  /* ---------- receipt tape (signature element) ---------- */
+  .tape{
+    background:var(--white);
+    border:1px solid var(--line);
+    position:relative;
+    font-family:'IBM Plex Mono',monospace;
+    padding:22px 20px 20px;
+    box-shadow:0 6px 18px rgba(35,41,32,0.08);
+  }
+  .tape::before{
+    content:"";position:absolute;top:-9px;left:0;right:0;height:9px;
+    background:
+      radial-gradient(circle at 8px 9px, transparent 5px, var(--paper) 5.5px) repeat-x;
+    background-size:16px 9px;
+  }
+  .tape::after{
+    content:"";position:absolute;bottom:-9px;left:0;right:0;height:9px;
+    background:
+      radial-gradient(circle at 8px 0px, transparent 5px, var(--paper) 5.5px) repeat-x;
+    background-size:16px 9px;
+  }
+  .tape h4{
+    margin:0 0 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--ink-soft);text-align:center;border-bottom:1px dashed var(--line);padding-bottom:10px;
+  }
+  .tape-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:var(--ink);}
+  .tape-row.dim{color:var(--ink-soft);font-size:12px;}
+  .tape-divider{border:none;border-top:1px dashed var(--line);margin:10px 0;}
+  .tape-row.total{font-size:16px;font-weight:600;color:var(--herb-dark);padding-top:8px;}
+  .tape-row.sale{font-size:16px;font-weight:600;color:var(--accent-dark);}
+  .tape-row.person{font-size:14px;}
+  .tape-note{font-size:10.5px;color:var(--ink-soft);text-align:center;margin-top:14px;line-height:1.5;}
+  .warn-badge{display:inline-block;background:var(--brick);color:var(--white);font-size:9.5px;padding:1px 5px;border-radius:3px;margin-left:6px;letter-spacing:.03em;}
+
+  /* ---------- import modal ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(35,41,32,0.55);display:flex;align-items:center;justify-content:center;z-index:50;}
+  .modal{background:var(--paper-card);border-radius:8px;padding:26px;width:560px;max-width:92vw;max-height:84vh;overflow:auto;border:1px solid var(--line);}
+  .modal h3{font-family:'Fraunces',serif;margin:0 0 6px;font-size:20px;}
+  .modal p{color:var(--ink-soft);font-size:13px;margin:0 0 14px;line-height:1.5;}
+  .modal textarea{
+    width:100%;height:220px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px;
+    border:1px solid var(--line);border-radius:5px;background:var(--white);resize:vertical;
+  }
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+  .modal-msg{font-size:12.5px;margin-top:10px;font-family:'IBM Plex Mono',monospace;}
+  .modal-msg.err{color:var(--brick);}
+  .modal-msg.ok{color:var(--herb-dark);}
+
+  .empty-state{padding:60px 20px;text-align:center;color:var(--ink-soft);}
+  .empty-state .big{font-family:'Fraunces',serif;font-size:20px;color:var(--ink);margin-bottom:6px;}
+
+  select.unit-select{-webkit-appearance:none;appearance:none;cursor:pointer;}
+  a.plain{color:inherit;text-decoration:none;}
+
+  @media (max-width: 760px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%;padding:14px 0 10px;}
+    .brand{padding:0 16px 12px;}
+    .nav{flex-direction:row;margin-top:6px;}
+    .nav-item{flex:1;padding:10px 16px;border-left:none;border-bottom:3px solid transparent;}
+    .nav-item.active{border-bottom-color:var(--accent);}
+    .nav-footer{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px 0;}
+    .nav-footer #save-status{width:100%;}
+    .nav-footer button{width:auto;flex:1;margin-top:0;}
+    .main{padding:20px 14px;}
+    .editor-grid{grid-template-columns:1fr;}
+    table.ledger{display:block;overflow-x:auto;}
+    .search{width:100%;}
+    .toolbar{flex-wrap:wrap;}
+  }
+</style>
+
+
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+
+  // ---------------------------------------------------------------------
+  // Seed data (recovered from previous tool's backup)
+  // ---------------------------------------------------------------------
+  const SEED = {"products":[{"id":1,"name":"Peito de Frango","unit":"kg","price":18},{"id":2,"name":"Arroz","unit":"kg","price":4},{"id":3,"name":"Azeite","unit":"l","price":26},{"id":4,"name":"Batata","unit":"kg","price":4},{"id":5,"name":"Parmesao","unit":"kg","price":50},{"id":6,"name":"Feijao preto","unit":"kg","price":4.5},{"id":7,"name":"Batata palha","unit":"g","price":0.07},{"id":8,"name":"Presunto picado","unit":"g","price":0.03},{"id":9,"name":"Azeitona verde","unit":"g","price":0.03},{"id":10,"name":"Cenoura","unit":"kg","price":2},{"id":11,"name":"Cebola branca","unit":"kg","price":3},{"id":12,"name":"Milho lata(420g)","unit":"kg","price":5.3},{"id":13,"name":"Uva passa","unit":"g","price":0.01},{"id":14,"name":"Maca Pink Lady (1kg (approx 5-6 apples)","unit":"unit","price":1},{"id":15,"name":"Creme de leite Nestle (230ml)","unit":"ml","price":0.02},{"id":16,"name":"Maionese","unit":"unit","price":8},{"id":17,"name":"Pimentao verde","unit":"unit","price":3},{"id":18,"name":"Mandioca (1kg)","unit":"unit","price":5},{"id":19,"name":"Corned Silverside","unit":"kg","price":18},{"id":20,"name":"Azeite Extra Virgem","unit":"ml","price":0.03},{"id":21,"name":"Cream Cheese (250g Block/Tub)","unit":"unit","price":6},{"id":22,"name":"Leite regular","unit":"l","price":2},{"id":23,"name":"Leite sem lactose","unit":"l","price":4},{"id":24,"name":"Maizena","unit":"g","price":0.01},{"id":25,"name":"Mozzarella","unit":"kg","price":15},{"id":26,"name":"Speck","unit":"g","price":0.05},{"id":27,"name":"Alho poro (1 whole bunch)","unit":"unit","price":4},{"id":28,"name":"Farinha","unit":"kg","price":2},{"id":29,"name":"Manteiga","unit":"g","price":0.02},{"id":30,"name":"Diced tomato (400g)","unit":"kg","price":5},{"id":31,"name":"Sobrecoxa de frango","unit":"kg","price":18},{"id":32,"name":"Camarao","unit":"kg","price":30},{"id":33,"name":"Limao","unit":"unit","price":1},{"id":35,"name":"Pork belly","unit":"kg","price":18},{"id":36,"name":"Chorizo","unit":"kg","price":24},{"id":37,"name":"Joelho de porco","unit":"kg","price":13},{"id":38,"name":"Costelinha de porco","unit":"kg","price":16},{"id":39,"name":"Costela de boi","unit":"kg","price":20},{"id":40,"name":"Cerveja","unit":"unit","price":7},{"id":41,"name":"Bacalhau","unit":"kg","price":53},{"id":42,"name":"Creme de leite fresco sem lactose","unit":"unit","price":4.5},{"id":43,"name":"Batata","unit":"kg","price":5},{"id":44,"name":"Lasanha (375g)","unit":"kg","price":16},{"id":45,"name":"Carne moida","unit":"kg","price":24},{"id":46,"name":"Parmesao","unit":"g","price":0.25},{"id":47,"name":"Salsao (sticks)","unit":"unit","price":1},{"id":48,"name":"Molho de tomate (700g)","unit":"kg","price":7},{"id":49,"name":"Leite condensado (395g)","unit":"kg","price":10.1},{"id":50,"name":"Cacao","unit":"kg","price":30},{"id":51,"name":"Fuba","unit":"kg","price":7},{"id":52,"name":"Ovo","unit":"unit","price":0.35},{"id":53,"name":"Tempeiro","unit":"unit","price":1},{"id":54,"name":"Salsinha","unit":"unit","price":4},{"id":55,"name":"Cebolinha","unit":"unit","price":4},{"id":56,"name":"Embalagem","unit":"unit","price":1},{"id":57,"name":"Açucar","unit":"kg","price":2},{"id":58,"name":"Embalagem bolo","unit":"unit","price":7},{"id":59,"name":"Etiqueta","unit":"unit","price":0.2},{"id":60,"name":"Nescau","unit":"kg","price":19},{"id":61,"name":"Fermento","unit":"g","price":0.02},{"id":62,"name":"Manteiga","unit":"g","price":0.02},{"id":63,"name":"Chocolate granulado","unit":"g","price":0.02},{"id":64,"name":"Laranja","unit":"kg","price":4.5},{"id":65,"name":"Couve","unit":"kg","price":17},{"id":66,"name":"Farofa Carla","unit":"kg","price":13.25},{"id":67,"name":"Torresmo","unit":"kg","price":200},{"id":68,"name":"Vinagrette","unit":"unit","price":2},{"id":69,"name":"Saco de assar","unit":"unit","price":1},{"id":70,"name":"Papel aluminio","unit":"unit","price":1},{"id":71,"name":"Cabana","unit":"kg","price":20},{"id":72,"name":"Brigadeiro 15g","unit":"unit","price":0.35},{"id":73,"name":"Coco ralado","unit":"kg","price":9.8},{"id":74,"name":"Coconut cream","unit":"l","price":10},{"id":75,"name":"Açucar de confeiteiro","unit":"kg","price":4},{"id":76,"name":"Picanha","unit":"kg","price":27},{"id":77,"name":"Salmao Congelado","unit":"kg","price":32},{"id":78,"name":"Raviolli Sem gluten (280g)","unit":"kg","price":32.1},{"id":79,"name":"Carne de boi picada","unit":"kg","price":26},{"id":80,"name":"Vegetais pacote para assar (500g)","unit":"kg","price":11},{"id":81,"name":"Tomate (150g)","unit":"kg","price":3.9},{"id":82,"name":"Ketchup (500ml)","unit":"l","price":10},{"id":83,"name":"Mostarda","unit":"l","price":14.5},{"id":84,"name":"Cognac/Brandy (700ml)","unit":"l","price":60},{"id":85,"name":"Laranja (150g)","unit":"kg","price":3.9},{"id":86,"name":"Champingnon (425g)","unit":"kg","price":4.12},{"id":87,"name":"Molho Ingles (500ml)","unit":"l","price":10.8},{"id":88,"name":"Batata Palha Extra Fina (100g)","unit":"kg","price":80},{"id":89,"name":"Batata Doce","unit":"kg","price":4.9},{"id":90,"name":"Foil","unit":"unit","price":0.3},{"id":91,"name":"Sal (1kg)","unit":"kg","price":2.6},{"id":92,"name":"Fraldinha","unit":"kg","price":29},{"id":93,"name":"Alho","unit":"kg","price":35},{"id":94,"name":"Caneloni (250g)","unit":"kg","price":12},{"id":95,"name":"Ricotta (375g)","unit":"kg","price":9.6},{"id":96,"name":"Farinha de Rosca","unit":"kg","price":9.8},{"id":97,"name":"Lasanha Glutem Free (250g)","unit":"kg","price":32.1},{"id":98,"name":"Presunto off the bone","unit":"kg","price":45},{"id":100,"name":"Oleo","unit":"l","price":6},{"id":101,"name":"Musculo (Shank)","unit":"kg","price":25},{"id":102,"name":"Espinafri (280g)","unit":"kg","price":18},{"id":103,"name":"Farofa Yoki (400g)","unit":"kg","price":13},{"id":104,"name":"Cassava","unit":"kg","price":9},{"id":105,"name":"Pulled beef","unit":"kg","price":18},{"id":106,"name":"Salad Topping","unit":"kg","price":30},{"id":107,"name":"Salad Dressing","unit":"kg","price":30}],"nextProdId":108,"dishes":[{"id":1,"name":"Feijoada Tradicional","items":[{"productId":6,"qty":2,"unit":"kg"},{"productId":19,"qty":1,"unit":"kg"},{"productId":35,"qty":1,"unit":"kg"},{"productId":36,"qty":0.5,"unit":"kg"},{"productId":37,"qty":0.4,"unit":"kg"},{"productId":38,"qty":0.8,"unit":"kg"},{"productId":26,"qty":250,"unit":"g"},{"productId":11,"qty":2,"unit":"kg"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":64,"qty":0.225,"unit":"kg"}],"numPeople":0,"gramsPerPerson":450},{"id":2,"name":"Bolo de cenoura com brigadeiro","items":[{"productId":3,"qty":0.12,"unit":"l"},{"productId":10,"qty":300,"unit":"g"},{"productId":52,"qty":4,"unit":"unit"},{"productId":57,"qty":0.4,"unit":"kg"},{"productId":28,"qty":0.3,"unit":"kg"},{"productId":61,"qty":10,"unit":"g"},{"productId":29,"qty":21.28,"unit":"g"},{"productId":50,"qty":40,"unit":"g"},{"productId":58,"qty":1,"unit":"unit"},{"productId":15,"qty":230,"unit":"ml"},{"productId":49,"qty":395,"unit":"g"},{"productId":72,"qty":8,"unit":"unit"}],"numPeople":16,"gramsPerPerson":100},{"id":3,"name":"Brigadeiro de Nescau","items":[{"productId":49,"qty":1,"unit":"unit"},{"productId":15,"qty":1,"unit":"unit"},{"productId":60,"qty":40,"unit":"g"},{"productId":29,"qty":21.28,"unit":"g"},{"productId":63,"qty":100,"unit":"g"}],"numPeople":30,"gramsPerPerson":15},{"id":4,"name":"Brigadeiro Tradicional","items":[{"productId":49,"qty":1,"unit":"unit"},{"productId":15,"qty":1,"unit":"unit"},{"productId":29,"qty":21.28,"unit":"g"},{"productId":63,"qty":100,"unit":"g"},{"productId":50,"qty":40,"unit":"g"}],"numPeople":30,"gramsPerPerson":15},{"id":5,"name":"Feijoada Tradicional Completa","items":[{"productId":6,"qty":2,"unit":"kg"},{"productId":19,"qty":1,"unit":"kg"},{"productId":35,"qty":1,"unit":"kg"},{"productId":36,"qty":0.5,"unit":"kg"},{"productId":37,"qty":0.4,"unit":"kg"},{"productId":38,"qty":0.8,"unit":"kg"},{"productId":26,"qty":250,"unit":"g"},{"productId":11,"qty":2,"unit":"kg"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":64,"qty":0.225,"unit":"kg"},{"productId":2,"qty":0.5,"unit":"kg"},{"productId":65,"qty":1.4,"unit":"kg"},{"productId":66,"qty":1.5,"unit":"kg"},{"productId":64,"qty":1,"unit":"kg"},{"productId":67,"qty":0.1,"unit":"kg"},{"productId":68,"qty":25,"unit":"unit"},{"productId":53,"qty":4,"unit":"unit"},{"productId":56,"qty":60,"unit":"unit"}],"numPeople":0,"gramsPerPerson":650},{"id":6,"name":"Costela assada","items":[{"productId":39,"qty":2,"unit":"kg"},{"productId":11,"qty":240,"unit":"g"},{"productId":40,"qty":1,"unit":"unit"},{"productId":70,"qty":1,"unit":"unit"},{"productId":69,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":53,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":260},{"id":7,"name":"Bacalhau com natas","items":[{"productId":41,"qty":1,"unit":"kg"},{"productId":23,"qty":0.5,"unit":"l"},{"productId":42,"qty":2,"unit":"ml"},{"productId":11,"qty":0.12,"unit":"kg"},{"productId":4,"qty":1,"unit":"kg"},{"productId":9,"qty":50,"unit":"g"},{"productId":54,"qty":0.25,"unit":"unit"},{"productId":53,"qty":1,"unit":"unit"},{"productId":3,"qty":0.1,"unit":"l"},{"productId":56,"qty":1,"unit":"unit"},{"productId":5,"qty":50,"unit":"g"},{"productId":25,"qty":50,"unit":"g"}],"numPeople":6,"gramsPerPerson":390},{"id":8,"name":"Lasanha bolognesa sem presunto","items":[{"productId":5,"qty":0.05,"unit":"kg"},{"productId":47,"qty":1,"unit":"unit"},{"productId":53,"qty":1,"unit":"unit"},{"productId":11,"qty":0.12,"unit":"kg"},{"productId":10,"qty":120,"unit":"g"},{"productId":56,"qty":1,"unit":"unit"},{"productId":25,"qty":250,"unit":"g"},{"productId":45,"qty":0.5,"unit":"kg"},{"productId":44,"qty":280,"unit":"g"},{"productId":30,"qty":800,"unit":"g"},{"productId":48,"qty":700,"unit":"g"}],"numPeople":4,"gramsPerPerson":340},{"id":9,"name":"Feijoada somente carne seca e linguica (completa)","items":[{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":64,"qty":0.225,"unit":"kg"},{"productId":6,"qty":0.5,"unit":"kg"},{"productId":19,"qty":375,"unit":"g"},{"productId":71,"qty":150,"unit":"g"},{"productId":36,"qty":125,"unit":"g"},{"productId":65,"qty":280,"unit":"g"},{"productId":66,"qty":380,"unit":"g"},{"productId":68,"qty":2,"unit":"unit"}],"numPeople":4,"gramsPerPerson":450},{"id":10,"name":"Feijoada somente carne seca e linguica sem acompanhamento","items":[{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":64,"qty":0.225,"unit":"kg"},{"productId":6,"qty":0.5,"unit":"kg"},{"productId":19,"qty":375,"unit":"g"},{"productId":71,"qty":150,"unit":"g"},{"productId":36,"qty":125,"unit":"g"}],"numPeople":4,"gramsPerPerson":450},{"id":11,"name":"Acompanhamento feijoada 4 pessoas","items":[{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":64,"qty":0.225,"unit":"kg"},{"productId":65,"qty":280,"unit":"g"},{"productId":66,"qty":380,"unit":"g"},{"productId":68,"qty":2,"unit":"unit"},{"productId":67,"qty":20,"unit":"g"},{"productId":2,"qty":200,"unit":"g"}],"numPeople":4,"gramsPerPerson":370},{"id":12,"name":"Bolo de Fuba","items":[{"productId":52,"qty":3,"unit":"unit"},{"productId":57,"qty":400,"unit":"g"},{"productId":51,"qty":400,"unit":"g"},{"productId":28,"qty":100,"unit":"g"},{"productId":3,"qty":0.24,"unit":"l"},{"productId":22,"qty":0.36,"unit":"l"},{"productId":61,"qty":10,"unit":"g"},{"productId":58,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":100},{"id":13,"name":"Bolo de milho com coco","items":[{"productId":12,"qty":0.42,"unit":"kg"},{"productId":22,"qty":0.1,"unit":"l"},{"productId":57,"qty":200,"unit":"g"},{"productId":73,"qty":0.05,"unit":"kg"},{"productId":61,"qty":10,"unit":"g"},{"productId":58,"qty":1,"unit":"unit"},{"productId":52,"qty":4,"unit":"unit"},{"productId":3,"qty":125,"unit":"ml"},{"productId":51,"qty":200,"unit":"g"},{"productId":75,"qty":300,"unit":"g"},{"productId":74,"qty":200,"unit":"ml"}],"numPeople":0,"gramsPerPerson":300},{"id":14,"name":"Bolo de milho","items":[{"productId":12,"qty":0.42,"unit":"kg"},{"productId":22,"qty":0.1,"unit":"l"},{"productId":57,"qty":200,"unit":"g"},{"productId":61,"qty":10,"unit":"g"},{"productId":58,"qty":1,"unit":"unit"},{"productId":52,"qty":4,"unit":"unit"},{"productId":3,"qty":125,"unit":"ml"},{"productId":51,"qty":200,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":15,"name":"Strogonoff de Carne","items":[{"productId":79,"qty":1,"unit":"kg"},{"productId":82,"qty":0.06,"unit":"l"},{"productId":83,"qty":0.03,"unit":"l"},{"productId":15,"qty":300,"unit":"ml"},{"productId":86,"qty":0.43,"unit":"kg"},{"productId":84,"qty":0.03,"unit":"l"},{"productId":28,"qty":50,"unit":"g"},{"productId":53,"qty":1,"unit":"unit"},{"productId":87,"qty":30,"unit":"ml"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":16,"name":"Arroz branco","items":[{"productId":2,"qty":0.2,"unit":"kg"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":17,"name":"Batata Palha Extra Fina","items":[{"productId":56,"qty":1,"unit":"unit"},{"productId":88,"qty":100,"unit":"g"}],"numPeople":0,"gramsPerPerson":25},{"id":18,"name":"Vegetais Assados","items":[{"productId":80,"qty":0.5,"unit":"kg"},{"productId":89,"qty":0.2,"unit":"kg"},{"productId":3,"qty":0.1,"unit":"l"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":19,"name":"Salmao en Papillote","items":[{"productId":77,"qty":1,"unit":"kg"},{"productId":3,"qty":0.1,"unit":"l"},{"productId":90,"qty":10,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":81,"qty":150,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":20,"name":"Bolo de Laranja","items":[{"productId":64,"qty":400,"unit":"g"},{"productId":52,"qty":3,"unit":"unit"},{"productId":3,"qty":0.18,"unit":"l"},{"productId":28,"qty":300,"unit":"g"},{"productId":57,"qty":270,"unit":"g"},{"productId":61,"qty":14,"unit":"g"},{"productId":58,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":21,"name":"Ravioli de Carne Sem Gluten","items":[{"productId":78,"qty":560,"unit":"g"},{"productId":3,"qty":0.03,"unit":"l"},{"productId":53,"qty":1,"unit":"unit"},{"productId":5,"qty":0.1,"unit":"kg"},{"productId":30,"qty":0.8,"unit":"kg"},{"productId":91,"qty":6,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":22,"name":"Carne Assada com Legumes","items":[{"productId":92,"qty":1.2,"unit":"kg"},{"productId":29,"qty":3,"unit":"g"},{"productId":91,"qty":15,"unit":"g"},{"productId":4,"qty":0.4,"unit":"kg"},{"productId":10,"qty":0.25,"unit":"kg"},{"productId":47,"qty":2,"unit":"g"},{"productId":11,"qty":0.2,"unit":"kg"},{"productId":3,"qty":0.05,"unit":"l"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":23,"name":"Canja","items":[{"productId":1,"qty":500,"unit":"g"},{"productId":2,"qty":100,"unit":"g"},{"productId":4,"qty":200,"unit":"g"},{"productId":10,"qty":150,"unit":"g"},{"productId":11,"qty":100,"unit":"g"},{"productId":3,"qty":15,"unit":"ml"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":93,"qty":12,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":24,"name":"Caneloni de Ricotta com molho de tomate","items":[{"productId":94,"qty":0.5,"unit":"kg"},{"productId":95,"qty":0.4,"unit":"kg"},{"productId":25,"qty":0.2,"unit":"kg"},{"productId":5,"qty":0.05,"unit":"kg"},{"productId":53,"qty":1,"unit":"unit"},{"productId":30,"qty":0.8,"unit":"kg"},{"productId":11,"qty":0.1,"unit":"kg"},{"productId":93,"qty":0.01,"unit":"kg"},{"productId":3,"qty":0.03,"unit":"l"},{"productId":56,"qty":1,"unit":"unit"},{"productId":42,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":25,"name":"Schnitzel de Frango","items":[{"productId":1,"qty":800,"unit":"g"},{"productId":5,"qty":50,"unit":"g"},{"productId":28,"qty":100,"unit":"g"},{"productId":52,"qty":2,"unit":"unit"},{"productId":96,"qty":0.15,"unit":"kg"},{"productId":93,"qty":5,"unit":"g"},{"productId":3,"qty":50,"unit":"ml"},{"productId":91,"qty":15,"unit":"g"},{"productId":25,"qty":0.15,"unit":"kg"},{"productId":56,"qty":1,"unit":"unit"},{"productId":48,"qty":500,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":26,"name":"Pure de Batata","items":[{"productId":4,"qty":0.8,"unit":"kg"},{"productId":29,"qty":50,"unit":"g"},{"productId":22,"qty":120,"unit":"ml"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":91,"qty":15,"unit":"g"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":27,"name":"Pudim de Leite","items":[{"productId":49,"qty":395,"unit":"g"},{"productId":22,"qty":300,"unit":"ml"},{"productId":52,"qty":4,"unit":"unit"},{"productId":57,"qty":220,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":28,"name":"Picadinho de Carne","items":[{"productId":79,"qty":1.5,"unit":"kg"},{"productId":87,"qty":0.03,"unit":"l"},{"productId":84,"qty":0.03,"unit":"l"},{"productId":48,"qty":700,"unit":"g"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":28,"qty":100,"unit":"g"}],"numPeople":6,"gramsPerPerson":250},{"id":29,"name":"Lasanha bolognesa sem presunto Gluten Free","items":[{"productId":5,"qty":0.05,"unit":"kg"},{"productId":47,"qty":1,"unit":"unit"},{"productId":53,"qty":1,"unit":"unit"},{"productId":11,"qty":0.12,"unit":"kg"},{"productId":10,"qty":120,"unit":"g"},{"productId":56,"qty":1,"unit":"unit"},{"productId":25,"qty":250,"unit":"g"},{"productId":45,"qty":0.5,"unit":"kg"},{"productId":30,"qty":800,"unit":"g"},{"productId":48,"qty":700,"unit":"g"},{"productId":97,"qty":250,"unit":"g"}],"numPeople":4,"gramsPerPerson":340},{"id":30,"name":"Lasanha bolognesa com presunto","items":[{"productId":5,"qty":0.05,"unit":"kg"},{"productId":47,"qty":1,"unit":"unit"},{"productId":53,"qty":1,"unit":"unit"},{"productId":11,"qty":0.12,"unit":"kg"},{"productId":10,"qty":120,"unit":"g"},{"productId":56,"qty":1,"unit":"unit"},{"productId":25,"qty":250,"unit":"g"},{"productId":45,"qty":0.5,"unit":"kg"},{"productId":44,"qty":280,"unit":"g"},{"productId":30,"qty":800,"unit":"g"},{"productId":48,"qty":700,"unit":"g"},{"productId":98,"qty":250,"unit":"g"}],"numPeople":4,"gramsPerPerson":340},{"id":32,"name":"Pure de Batata","items":[{"productId":4,"qty":0.5,"unit":"kg"},{"productId":29,"qty":100,"unit":"g"},{"productId":22,"qty":0.1,"unit":"l"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":33,"name":"Musculo com batata cenoura salsao","items":[{"productId":101,"qty":1.5,"unit":"kg"},{"productId":10,"qty":200,"unit":"g"},{"productId":4,"qty":400,"unit":"g"},{"productId":47,"qty":2,"unit":"unit"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":11,"qty":100,"unit":"g"}],"numPeople":0,"gramsPerPerson":300},{"id":34,"name":"Caneloni de Ricata e Espinafre","items":[{"productId":94,"qty":500,"unit":"g"},{"productId":95,"qty":700,"unit":"g"},{"productId":102,"qty":280,"unit":"g"},{"productId":48,"qty":0.7,"unit":"kg"},{"productId":5,"qty":100,"unit":"g"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":35,"name":"Fraldinha Assada","items":[{"productId":11,"qty":0.2,"unit":"kg"},{"productId":3,"qty":0.05,"unit":"l"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"},{"productId":92,"qty":1,"unit":"kg"}],"numPeople":0,"gramsPerPerson":300},{"id":36,"name":"Creme de Milho","items":[{"productId":12,"qty":420,"unit":"g"},{"productId":22,"qty":0.5,"unit":"l"},{"productId":28,"qty":60,"unit":"g"},{"productId":29,"qty":60,"unit":"g"},{"productId":11,"qty":100,"unit":"g"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":37,"name":"Farofa sem Bacon","items":[{"productId":103,"qty":0.5,"unit":"kg"},{"productId":29,"qty":100,"unit":"g"},{"productId":52,"qty":1,"unit":"unit"},{"productId":11,"qty":100,"unit":"g"},{"productId":53,"qty":1,"unit":"unit"},{"productId":56,"qty":1,"unit":"unit"}],"numPeople":0,"gramsPerPerson":300},{"id":38,"name":"Escondidinho","items":[{"productId":104,"qty":0.2,"unit":"kg"},{"productId":105,"qty":0.1,"unit":"kg"},{"productId":106,"qty":0.05,"unit":"kg"},{"productId":106,"qty":0.01,"unit":"kg"},{"productId":107,"qty":0.01,"unit":"kg"}],"numPeople":0,"gramsPerPerson":300}],"nextDishId":39};
+
+  const UNIT_OPTIONS = ["kg","g","l","ml","unit"];
+
+  let state = {
+    products: [],
+    dishes: [],
+    nextProdId: 1,
+    nextDishId: 1,
+    view: {tab:"dishes", dishId:null, prodSearch:"", dishSearch:""},
+    importOpen:false,
+    importText:"",
+    importMsg:null,
+    importReplace:false,
+    saveTimer:null,
+    lastSaved:null,
+    loaded:false
+  };
+
+  // ---------------------------------------------------------------------
+  // Settings: paste your Supabase details here (see setup steps)
+  // ---------------------------------------------------------------------
+  const SUPABASE_URL = "https://qhfldmlffsjtnjclcczg.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZmxkbWxmZnNqdG5qY2xjY3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4NzgzMjIsImV4cCI6MjEwNzQ1NDMyMn0.ihPm04fn0jmGfn_6RilltkqWVs4s5gw9V3cthn2769M";
+  const CONFIGURED = !SUPABASE_URL.startsWith("qhfldmlffsjtnjclcczg");
+  const LOCAL_KEY = "custo-corte-data-v1";
+  const SESSION_KEY = "custo-corte-session-v1";
+
+  state.session = null;
+  state.authMsg = null;
+  state.saveStatus = "";
+
+  function readSession(){
+    try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }catch(e){ return null; }
+  }
+  function writeSession(s){
+    state.session = s;
+    try{
+      if(s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+      else localStorage.removeItem(SESSION_KEY);
+    }catch(e){}
+  }
+  function sessionFromResponse(j){
+    return {
+      access_token: j.access_token,
+      refresh_token: j.refresh_token,
+      expires_at: Math.floor(Date.now()/1000) + (j.expires_in||3600)
+    };
+  }
+  async function signIn(email, password){
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
+      method:"POST",
+      headers:{"apikey":SUPABASE_ANON_KEY,"Content-Type":"application/json"},
+      body: JSON.stringify({email, password})
+    });
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.error_description || j.msg || "Could not sign in");
+    writeSession(sessionFromResponse(j));
+  }
+  async function getToken(){
+    const s = state.session;
+    if(!s) throw new Error("Not signed in");
+    if(s.expires_at - 60 > Math.floor(Date.now()/1000)) return s.access_token;
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+      method:"POST",
+      headers:{"apikey":SUPABASE_ANON_KEY,"Content-Type":"application/json"},
+      body: JSON.stringify({refresh_token: s.refresh_token})
+    });
+    const j = await r.json();
+    if(!r.ok){ writeSession(null); state.loaded=false; render(); throw new Error("Session expired"); }
+    writeSession(sessionFromResponse(j));
+    return state.session.access_token;
+  }
+  function signOut(){
+    writeSession(null);
+    state.loaded = false;
+    render();
+  }
+
+  function currentPayload(){
+    return {products:state.products, dishes:state.dishes, nextProdId:state.nextProdId, nextDishId:state.nextDishId};
+  }
+  function applyPayload(p){
+    state.products = p.products || [];
+    state.dishes = p.dishes || [];
+    state.nextProdId = p.nextProdId || 1;
+    state.nextDishId = p.nextDishId || 1;
+  }
+
+  async function remoteLoad(){
+    const token = await getToken();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/catering_data?id=eq.main&select=data`,{
+      headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+token}
+    });
+    if(!r.ok) throw new Error("Load failed ("+r.status+")");
+    const rows = await r.json();
+    return rows.length ? rows[0].data : null;
+  }
+  async function remoteSave(payload){
+    const token = await getToken();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/catering_data`,{
+      method:"POST",
+      headers:{
+        "apikey":SUPABASE_ANON_KEY,
+        "Authorization":"Bearer "+token,
+        "Content-Type":"application/json",
+        "Prefer":"resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify({id:"main", data:payload, updated_at:new Date().toISOString()})
+    });
+    if(!r.ok) throw new Error("Save failed ("+r.status+")");
+  }
+
+  async function loadData(){
+    try{
+      let data = null;
+      if(CONFIGURED) data = await remoteLoad();
+      else { const raw = localStorage.getItem(LOCAL_KEY); data = raw ? JSON.parse(raw) : null; }
+      if(data){ applyPayload(data); }
+      else { seedFromBackup(); await persist(true); }
+      state.saveStatus = CONFIGURED ? "Synced" : "Saved on this device only";
+    }catch(e){
+      console.error(e);
+      state.saveStatus = "Could not load: "+e.message;
+      if(!state.products.length) seedFromBackup();
+    }
+    state.loaded = true;
+    render();
+  }
+
+  function seedFromBackup(){
+    state.products = SEED.products.map(p=>({...p}));
+    state.dishes = SEED.dishes.map(d=>({...d, items:d.items.map(i=>({...i}))}));
+    state.nextProdId = SEED.nextProdId;
+    state.nextDishId = SEED.nextDishId;
+  }
+
+  async function persist(silent){
+    const payload = currentPayload();
+    state.saveTimer = null;
+    try{
+      if(CONFIGURED) await remoteSave(payload);
+      else localStorage.setItem(LOCAL_KEY, JSON.stringify(payload));
+      state.saveStatus = CONFIGURED ? "Synced" : "Saved on this device only";
+    }catch(e){
+      console.error("Save failed", e);
+      state.saveStatus = "NOT saved: "+e.message;
+    }
+    if(!silent) renderSaveIndicator();
+  }
+
+  function queueSave(){
+    state.saveStatus = "Saving…";
+    renderSaveIndicator();
+    if(state.saveTimer) clearTimeout(state.saveTimer);
+    state.saveTimer = setTimeout(()=>persist(false), 500);
+  }
+
+  document.addEventListener("visibilitychange", async ()=>{
+    if(document.visibilityState!=="visible" || !CONFIGURED || !state.session || !state.loaded) return;
+    if(state.saveTimer) return;
+    try{
+      const data = await remoteLoad();
+      if(data){ applyPayload(data); render(); }
+    }catch(e){ console.error(e); }
+  });
+
+  // ---------------------------------------------------------------------
+  // Unit conversion & cost math
+  // ---------------------------------------------------------------------
+  function convert(qty, fromUnit, toUnit){
+    if(fromUnit === toUnit) return qty;
+    const weight = {kg:1, g:1/1000};
+    const vol = {l:1, ml:1/1000};
+    if(weight[fromUnit] !== undefined && weight[toUnit] !== undefined){
+      return qty * weight[fromUnit] / weight[toUnit];
+    }
+    if(vol[fromUnit] !== undefined && vol[toUnit] !== undefined){
+      return qty * vol[fromUnit] / vol[toUnit];
+    }
+    return null; // incompatible units
+  }
+
+  function itemCost(item, product){
+    if(!product) return {cost:0, mismatch:true};
+    const converted = convert(item.qty, item.unit, product.unit);
+    if(converted === null) return {cost:0, mismatch:true};
+    return {cost: converted * product.price, mismatch:false};
+  }
+
+  function itemWeightKg(item){
+    if(item.unit === "kg") return item.qty;
+    if(item.unit === "g") return item.qty/1000;
+    if(item.unit === "l") return item.qty;   // approx 1L ~ 1kg
+    if(item.unit === "ml") return item.qty/1000;
+    return 0;
+  }
+
+  function dishTotals(dish){
+    let cost=0, weight=0, mismatches=0;
+    dish.items.forEach(it=>{
+      const p = state.products.find(pr=>pr.id===it.productId);
+      const r = itemCost(it, p);
+      cost += r.cost;
+      if(r.mismatch) mismatches++;
+      weight += itemWeightKg(it);
+    });
+    const gpp = dish.gramsPerPerson || 300;
+    const computedPeople = weight>0 ? Math.round((weight*1000)/gpp) : 0;
+    const people = (dish.numPeople && dish.numPeople>0) ? dish.numPeople : computedPeople;
+    const sale = cost*3;
+    return {
+      cost, weight, mismatches, computedPeople, people,
+      costPerPerson: people>0 ? cost/people : null,
+      salePerPerson: people>0 ? sale/people : null,
+      sale, gpp
+    };
+  }
+
+  function fmtMoney(n){
+    if(n===null || n===undefined || isNaN(n)) return "—";
+    return "R$ " + n.toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtKg(n){
+    return n.toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:3}) + " kg";
+  }
+
+  // ---------------------------------------------------------------------
+  // Mutations
+  // ---------------------------------------------------------------------
+  function addProduct(){
+    const id = state.nextProdId++;
+    state.products.push({id, name:"Novo ingrediente", unit:"kg", price:0});
+    queueSave(); render();
+    setTimeout(()=>{
+      const el = document.querySelector(`[data-prod-name="${id}"]`);
+      if(el){ el.focus(); el.select(); }
+    },0);
+  }
+  function updateProduct(id, field, value){
+    const p = state.products.find(x=>x.id===id);
+    if(!p) return;
+    if(field==="price") p[field] = parseFloat(value)||0;
+    else p[field] = value;
+    queueSave();
+  }
+  function deleteProduct(id){
+    const used = state.dishes.some(d=>d.items.some(i=>i.productId===id));
+    if(used && !confirm("This ingredient is used in at least one recipe. Delete anyway? The recipe items will show as missing.")) return;
+    state.products = state.products.filter(x=>x.id!==id);
+    queueSave(); render();
+  }
+
+  function addDish(){
+    const id = state.nextDishId++;
+    state.dishes.push({id, name:"New dish", items:[], numPeople:0, gramsPerPerson:300});
+    queueSave();
+    state.view.tab="dishes"; state.view.dishId=id;
+    render();
+  }
+  function deleteDish(id, ev){
+    if(ev) ev.stopPropagation();
+    if(!confirm("Delete this recipe?")) return;
+    state.dishes = state.dishes.filter(d=>d.id!==id);
+    if(state.view.dishId===id) state.view.dishId=null;
+    queueSave(); render();
+  }
+  function updateDish(id, field, value){
+    const d = state.dishes.find(x=>x.id===id);
+    if(!d) return;
+    if(field==="gramsPerPerson" || field==="numPeople") d[field] = parseFloat(value)||0;
+    else d[field] = value;
+    queueSave(); render();
+  }
+  function addItemToDish(dishId){
+    const d = state.dishes.find(x=>x.id===dishId);
+    if(!d) return;
+    const firstProd = state.products[0];
+    d.items.push({productId: firstProd? firstProd.id : null, qty:1, unit: firstProd? firstProd.unit : "unit"});
+    queueSave(); render();
+  }
+  function updateItem(dishId, idx, field, value){
+    const d = state.dishes.find(x=>x.id===dishId);
+    if(!d) return;
+    const it = d.items[idx];
+    if(field==="qty") it.qty = parseFloat(value)||0;
+    else if(field==="productId") it.productId = parseInt(value);
+    else it.unit = value;
+    queueSave(); render();
+  }
+  function removeItem(dishId, idx){
+    const d = state.dishes.find(x=>x.id===dishId);
+    if(!d) return;
+    d.items.splice(idx,1);
+    queueSave(); render();
+  }
+
+  function doImport(){
+    state.importMsg=null;
+    let data;
+    try{ data = JSON.parse(state.importText); }
+    catch(e){ state.importMsg={type:"err", text:"Couldn't parse JSON: "+e.message}; render(); return; }
+
+    if(state.importReplace){
+      if(!Array.isArray(data.products) || !Array.isArray(data.dishes)){
+        state.importMsg={type:"err", text:"To replace everything, the file needs both 'products' and 'dishes'."}; render(); return;
+      }
+      if(!confirm("Replace ALL current ingredients and recipes with the contents of this file?")) return;
+      applyPayload({
+        products: data.products, dishes: data.dishes,
+        nextProdId: data.nextProdId || (Math.max(0,...data.products.map(p=>p.id))+1),
+        nextDishId: data.nextDishId || (Math.max(0,...data.dishes.map(d=>d.id))+1)
+      });
+      state.importMsg={type:"ok", text:`Replaced everything: ${data.products.length} ingredients, ${data.dishes.length} recipes.`};
+      queueSave(); render(); return;
+    }
+    let addedProducts=0, addedDishes=0, updatedProducts=0;
+
+    if(Array.isArray(data.products)){
+      data.products.forEach(p=>{
+        const existing = state.products.find(x=> x.name.trim().toLowerCase()===String(p.name).trim().toLowerCase() && x.unit===p.unit);
+        if(existing){
+          existing.price = p.price;
+          updatedProducts++;
+        } else {
+          state.products.push({id: state.nextProdId++, name:p.name, unit:p.unit||"unit", price:parseFloat(p.price)||0});
+          addedProducts++;
+        }
+      });
+    }
+    if(Array.isArray(data.dishes)){
+      data.dishes.forEach(d=>{
+        state.dishes.push({
+          id: state.nextDishId++,
+          name: d.name || "Imported dish",
+          items: (d.items||[]).map(i=>({productId:i.productId, qty:parseFloat(i.qty)||0, unit:i.unit||"unit"})),
+          numPeople: d.numPeople||0,
+          gramsPerPerson: d.gramsPerPerson||300
+        });
+        addedDishes++;
+      });
+    }
+    if(addedProducts===0 && addedDishes===0 && updatedProducts===0){
+      state.importMsg={type:"err", text:"No recognizable 'products' or 'dishes' arrays found in that JSON."};
+      render(); return;
+    }
+    state.importMsg={type:"ok", text:`Imported: ${addedProducts} new ingredient(s), ${updatedProducts} price update(s), ${addedDishes} new recipe(s).`};
+    queueSave();
+    render();
+  }
+
+  function exportData(){
+    const payload = JSON.stringify({products:state.products, dishes:state.dishes, nextProdId:state.nextProdId, nextDishId:state.nextDishId}, null, 2);
+    const blob = new Blob([payload], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "catering-data-export.json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------
+  const root = document.getElementById("app");
+
+  function render(){
+    if(CONFIGURED && !state.session){
+      root.innerHTML = renderLogin();
+      const f = root.querySelector("#login-btn");
+      f.onclick = async ()=>{
+        const email = root.querySelector("#login-email").value.trim();
+        const pw = root.querySelector("#login-pw").value;
+        root.querySelector("#login-msg").textContent = "Signing in…";
+        try{ await signIn(email, pw); render(); loadData(); }
+        catch(e){ root.querySelector("#login-msg").textContent = e.message; }
+      };
+      root.querySelector("#login-pw").onkeydown = (ev)=>{ if(ev.key==="Enter") f.onclick(); };
+      return;
+    }
+    if(!state.loaded){
+      root.innerHTML = `<div style="padding:60px;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft)">Loading ledger…</div>`;
+      return;
+    }
+    root.innerHTML = `
+      <div class="sidebar">
+        <div class="brand">Custo &amp; Corte<span>catering cost ledger</span></div>
+        <div class="nav">
+          <div class="nav-item ${state.view.tab==='dishes'?'active':''}" data-nav="dishes">Recipes <span class="count">${state.dishes.length}</span></div>
+          <div class="nav-item ${state.view.tab==='products'?'active':''}" data-nav="products">Ingredients <span class="count">${state.products.length}</span></div>
+        </div>
+        <div class="nav-footer">
+          <div id="save-status" class="mono" style="font-size:11px;color:rgba(247,243,231,0.55);margin-bottom:4px;">${escapeHtml(state.saveStatus||"")}</div>
+          <button data-action="import">Import JSON</button>
+          <button data-action="export">Export backup</button>
+          ${CONFIGURED ? '<button data-action="signout">Sign out</button>' : ''}
+        </div>
+      </div>
+      <div class="main">${state.view.tab==='dishes' ? (state.view.dishId ? renderDishEditor() : renderDishList()) : renderProducts()}</div>
+      ${state.importOpen ? renderImportModal() : ""}
+    `;
+    bindEvents();
+  }
+
+  function renderProducts(){
+    const q = state.view.prodSearch.toLowerCase();
+    const list = state.products
+      .filter(p=>p.name.toLowerCase().includes(q))
+      .sort((a,b)=>a.name.localeCompare(b.name));
+    return `
+      <h1 class="page-title">Ingredient master list</h1>
+      <p class="page-sub">Prices here flow live into every recipe. Change a price once, every dish updates.</p>
+      <div class="toolbar">
+        <input class="search" placeholder="Search ingredients…" value="${escapeAttr(state.view.prodSearch)}" data-input="prodSearch">
+        <button class="btn" data-action="add-product">+ Add ingredient</button>
+      </div>
+      <table class="ledger">
+        <thead><tr><th style="width:46%">Name</th><th style="width:16%">Unit</th><th style="width:18%">Price / unit</th><th style="width:14%">Used in</th><th style="width:6%"></th></tr></thead>
+        <tbody>
+          ${list.length ? list.map(p=>{
+            const usedCount = state.dishes.filter(d=>d.items.some(i=>i.productId===p.id)).length;
+            return `
+            <tr>
+              <td><input data-prod-name="${p.id}" data-prod="${p.id}" data-field="name" value="${escapeAttr(p.name)}"></td>
+              <td>
+                <select class="unit-select" data-prod="${p.id}" data-field="unit">
+                  ${UNIT_OPTIONS.map(u=>`<option value="${u}" ${u===p.unit?'selected':''}>${u}</option>`).join("")}
+                </select>
+              </td>
+              <td><input class="num" type="number" step="0.01" data-prod="${p.id}" data-field="price" value="${p.price}"></td>
+              <td class="mono" style="color:var(--ink-soft);font-size:12.5px;">${usedCount} recipe${usedCount===1?'':'s'}</td>
+              <td><button class="icon-btn" data-del-prod="${p.id}">✕</button></td>
+            </tr>`;
+          }).join("") : `<tr><td colspan="5"><div class="empty-state">No ingredients match.</div></td></tr>`}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderDishList(){
+    const q = state.view.dishSearch.toLowerCase();
+    const list = state.dishes.filter(d=>d.name.toLowerCase().includes(q));
+    return `
+      <h1 class="page-title">Recipes</h1>
+      <p class="page-sub">Open a recipe to see its cost breakdown, total weight, sale price and price per person.</p>
+      <div class="toolbar">
+        <input class="search" placeholder="Search recipes…" value="${escapeAttr(state.view.dishSearch)}" data-input="dishSearch">
+        <button class="btn" data-action="add-dish">+ New recipe</button>
+      </div>
+      <div class="dish-grid">
+        ${list.map(d=>{
+          const t = dishTotals(d);
+          return `
+          <div class="dish-card" data-open-dish="${d.id}">
+            <button class="del" data-del-dish="${d.id}">✕</button>
+            <h3>${escapeHtml(d.name)}</h3>
+            <div class="meta"><span>${d.items.length} item${d.items.length===1?'':'s'}</span><b>${fmtMoney(t.cost)}</b></div>
+          </div>`;
+        }).join("")}
+        <div class="new-dish-card" data-action="add-dish">+ New recipe</div>
+      </div>
+    `;
+  }
+
+  function renderDishEditor(){
+    const d = state.dishes.find(x=>x.id===state.view.dishId);
+    if(!d){ state.view.dishId=null; return renderDishList(); }
+    const t = dishTotals(d);
+    return `
+      <div class="editor-header">
+        <span class="back" data-action="back-to-dishes">← Recipes</span>
+      </div>
+      <input class="dish-name-input" value="${escapeAttr(d.name)}" data-dish-field="name" data-dish-id="${d.id}">
+
+      <div class="editor-grid" style="margin-top:22px;">
+        <div>
+          <div class="field-row">
+            <div class="field">
+              <label>Grams / person</label>
+              <input type="number" step="1" value="${d.gramsPerPerson||300}" data-dish-field="gramsPerPerson" data-dish-id="${d.id}">
+            </div>
+            <div class="field">
+              <label>People (override)</label>
+              <input type="number" step="1" value="${d.numPeople||''}" placeholder="${t.computedPeople||0}" data-dish-field="numPeople" data-dish-id="${d.id}">
+            </div>
+          </div>
+
+          <table class="ledger">
+            <thead><tr><th style="width:40%">Ingredient</th><th style="width:18%">Qty</th><th style="width:16%">Unit</th><th style="width:18%">Cost</th><th style="width:8%"></th></tr></thead>
+            <tbody>
+              ${d.items.length ? d.items.map((it,idx)=>{
+                const p = state.products.find(pr=>pr.id===it.productId);
+                const r = itemCost(it,p);
+                return `
+                <tr>
+                  <td>
+                    <select data-item-field="productId" data-dish-id="${d.id}" data-idx="${idx}">
+                      ${state.products.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(pr=>`<option value="${pr.id}" ${pr.id===it.productId?'selected':''}>${escapeHtml(pr.name)}</option>`).join("")}
+                    </select>
+                  </td>
+                  <td><input class="num" type="number" step="0.01" value="${it.qty}" data-item-field="qty" data-dish-id="${d.id}" data-idx="${idx}"></td>
+                  <td>
+                    <select data-item-field="unit" data-dish-id="${d.id}" data-idx="${idx}">
+                      ${UNIT_OPTIONS.map(u=>`<option value="${u}" ${u===it.unit?'selected':''}>${u}</option>`).join("")}
+                    </select>
+                  </td>
+                  <td class="num">${r.mismatch ? `<span class="warn-badge">unit?</span>` : fmtMoney(r.cost)}</td>
+                  <td><button class="icon-btn" data-remove-item="${idx}" data-dish-id="${d.id}">✕</button></td>
+                </tr>`;
+              }).join("") : `<tr><td colspan="5"><div class="empty-state">No ingredients yet — add the first one below.</div></td></tr>`}
+            </tbody>
+          </table>
+          <div style="margin-top:10px;">
+            <button class="btn ghost" data-action="add-item" data-dish-id="${d.id}">+ Add ingredient to recipe</button>
+          </div>
+          ${t.mismatches>0 ? `<p style="color:var(--brick);font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin-top:10px;">⚠ ${t.mismatches} item(s) have a unit that doesn't match their ingredient's unit (e.g. kg vs unit) — cost for those isn't counted. Fix the unit or the ingredient's base unit.</p>` : ""}
+        </div>
+
+        <div class="tape">
+          <h4>Recipe ticket</h4>
+          <div class="tape-row"><span>Total weight</span><span>${fmtKg(t.weight)}</span></div>
+          <div class="tape-row dim"><span>Grams / person</span><span>${t.gpp} g</span></div>
+          <div class="tape-row dim"><span>People (from weight)</span><span>${t.computedPeople}</span></div>
+          <div class="tape-row"><span>People (used)</span><span>${t.people||'—'}</span></div>
+          <hr class="tape-divider">
+          <div class="tape-row total"><span>Cost total</span><span>${fmtMoney(t.cost)}</span></div>
+          <div class="tape-row person"><span>Cost / person</span><span>${fmtMoney(t.costPerPerson)}</span></div>
+          <hr class="tape-divider">
+          <div class="tape-row sale"><span>Sale (3×)</span><span>${fmtMoney(t.sale)}</span></div>
+          <div class="tape-row person"><span>Sale / person</span><span>${fmtMoney(t.salePerPerson)}</span></div>
+          <div class="tape-note">Sale price assumes a 3× markup on ingredient cost.<br>Weight totals treat 1 L ≈ 1 kg and exclude items priced "per unit".</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderLogin(){
+    return `
+      <div style="margin:auto;max-width:340px;padding:80px 20px;width:100%;">
+        <div style="font-family:'Fraunces',serif;font-weight:700;font-size:28px;">Custo &amp; Corte</div>
+        <div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-dark);margin:6px 0 26px;">catering cost ledger</div>
+        <div class="field" style="margin-bottom:12px;"><label>Email</label><input id="login-email" type="email" style="width:100%" autocomplete="username"></div>
+        <div class="field" style="margin-bottom:16px;"><label>Password</label><input id="login-pw" type="password" style="width:100%" autocomplete="current-password"></div>
+        <button class="btn" id="login-btn" style="width:100%">Sign in</button>
+        <div id="login-msg" class="modal-msg err"></div>
+      </div>`;
+  }
+
+  function renderImportModal(){
+    return `
+      <div class="modal-overlay" data-action="close-import-overlay">
+        <div class="modal" onclick="event.stopPropagation()">
+          <h3>Import ingredients / recipes</h3>
+          <p>Paste JSON shaped like <span class="mono">{"products":[{"name":"","unit":"kg","price":0}], "dishes":[{"name":"","items":[{"productId":1,"qty":1,"unit":"kg"}]}]}</span>. Matching ingredient names + units get their price updated; new ones are added. Dishes are always added as new recipes.</p>
+          <div style="margin-bottom:10px;"><input type="file" accept=".json,application/json" data-input="importFile" style="font-size:12.5px;"></div>
+          <textarea data-input="importText" placeholder="Choose a file above, or paste JSON here…">${escapeHtml(state.importText)}</textarea>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" data-input="importReplace" ${state.importReplace?'checked':''}> Replace everything (use this to restore a full backup)
+          </label>
+          ${state.importMsg ? `<div class="modal-msg ${state.importMsg.type}">${escapeHtml(state.importMsg.text)}</div>` : ""}
+          <div class="modal-actions">
+            <button class="btn secondary" data-action="close-import">Cancel</button>
+            <button class="btn" data-action="do-import">Import</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSaveIndicator(){
+    const el = document.getElementById("save-status");
+    if(el) el.textContent = state.saveStatus;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  // ---------------------------------------------------------------------
+  // Event binding (delegation-lite: re-bind after each render)
+  // ---------------------------------------------------------------------
+  function bindEvents(){
+    root.querySelectorAll('[data-nav]').forEach(el=>{
+      el.onclick = ()=>{ state.view.tab = el.dataset.nav; state.view.dishId=null; render(); };
+    });
+    const addProdBtn = root.querySelector('[data-action="add-product"]');
+    if(addProdBtn) addProdBtn.onclick = addProduct;
+
+    root.querySelectorAll('[data-del-prod]').forEach(el=>{
+      el.onclick = ()=> deleteProduct(parseInt(el.dataset.delProd));
+    });
+    root.querySelectorAll('[data-prod]').forEach(el=>{
+      const id = parseInt(el.dataset.prod), field = el.dataset.field;
+      el.onchange = ()=> updateProduct(id, field, el.value);
+      if(el.tagName==='INPUT') el.oninput = ()=> updateProduct(id, field, el.value);
+    });
+    const prodSearch = root.querySelector('[data-input="prodSearch"]');
+    if(prodSearch){
+      prodSearch.oninput = ()=>{ state.view.prodSearch = prodSearch.value; render(); root.querySelector('[data-input="prodSearch"]').focus(); root.querySelector('[data-input="prodSearch"]').setSelectionRange(999,999); };
+    }
+    const dishSearch = root.querySelector('[data-input="dishSearch"]');
+    if(dishSearch){
+      dishSearch.oninput = ()=>{ state.view.dishSearch = dishSearch.value; render(); const el2=root.querySelector('[data-input="dishSearch"]'); if(el2){el2.focus(); el2.setSelectionRange(999,999);} };
+    }
+
+    root.querySelectorAll('[data-action="add-dish"]').forEach(el=>{ el.onclick = addDish; });
+    root.querySelectorAll('[data-open-dish]').forEach(el=>{
+      el.onclick = ()=>{ state.view.dishId = parseInt(el.dataset.openDish); render(); };
+    });
+    root.querySelectorAll('[data-del-dish]').forEach(el=>{
+      el.onclick = (ev)=> deleteDish(parseInt(el.dataset.delDish), ev);
+    });
+    const backBtn = root.querySelector('[data-action="back-to-dishes"]');
+    if(backBtn) backBtn.onclick = ()=>{ state.view.dishId=null; render(); };
+
+    root.querySelectorAll('[data-dish-field]').forEach(el=>{
+      const id = parseInt(el.dataset.dishId), field = el.dataset.dishField;
+      el.onchange = ()=> updateDish(id, field, el.value);
+      if(field==='name'){ el.oninput = ()=>{ const d=state.dishes.find(x=>x.id===id); d.name=el.value; queueSave(); }; }
+    });
+
+    const addItemBtn = root.querySelector('[data-action="add-item"]');
+    if(addItemBtn) addItemBtn.onclick = ()=> addItemToDish(parseInt(addItemBtn.dataset.dishId));
+
+    root.querySelectorAll('[data-item-field]').forEach(el=>{
+      const dishId = parseInt(el.dataset.dishId), idx = parseInt(el.dataset.idx), field = el.dataset.itemField;
+      el.onchange = ()=> updateItem(dishId, idx, field, el.value);
+    });
+    root.querySelectorAll('[data-remove-item]').forEach(el=>{
+      el.onclick = ()=> removeItem(parseInt(el.dataset.dishId), parseInt(el.dataset.removeItem));
+    });
+
+    const importOpenBtn = root.querySelector('[data-action="import"]');
+    if(importOpenBtn) importOpenBtn.onclick = ()=>{ state.importOpen=true; state.importMsg=null; render(); };
+    const signoutBtn = root.querySelector('[data-action="signout"]');
+    if(signoutBtn) signoutBtn.onclick = signOut;
+    const exportBtn = root.querySelector('[data-action="export"]');
+    if(exportBtn) exportBtn.onclick = exportData;
+    const closeImport = root.querySelector('[data-action="close-import"]');
+    if(closeImport) closeImport.onclick = ()=>{ state.importOpen=false; render(); };
+    const closeImportOverlay = root.querySelector('[data-action="close-import-overlay"]');
+    if(closeImportOverlay) closeImportOverlay.onclick = ()=>{ state.importOpen=false; render(); };
+    const importTextarea = root.querySelector('[data-input="importText"]');
+    if(importTextarea) importTextarea.oninput = ()=>{ state.importText = importTextarea.value; };
+    const importFile = root.querySelector('[data-input="importFile"]');
+    if(importFile) importFile.onchange = async ()=>{
+      const f = importFile.files[0]; if(!f) return;
+      state.importText = await f.text(); render();
+    };
+    const importReplace = root.querySelector('[data-input="importReplace"]');
+    if(importReplace) importReplace.onchange = ()=>{ state.importReplace = importReplace.checked; };
+    const doImportBtn = root.querySelector('[data-action="do-import"]');
+    if(doImportBtn) doImportBtn.onclick = doImport;
+  }
+
+  if(CONFIGURED){
+    state.session = readSession();
+    if(state.session) loadData(); else render();
+  } else {
+    loadData();
+  }
+})();
+</script>
+</body>
+</html>
